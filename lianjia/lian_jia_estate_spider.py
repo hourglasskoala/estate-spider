@@ -9,6 +9,11 @@ from lianjia.base_spider import BaseSpider
 
 class LianJiaEstateSpider(BaseSpider):
 
+    def __init__(self):
+        self.base_url = 'https://sz.lianjia.com/ershoufang/'
+        self.seen = set([])
+        self.unseen = set([])
+
     def parse(self, html):
         soup = BeautifulSoup(html, features='lxml')
         tags = soup.find_all(name='a', attrs={'target': '_blank', 'data-el': 'ershoufang'})
@@ -75,7 +80,6 @@ class LianJiaEstateSpider(BaseSpider):
         return info_json
 
     def output(self, url):
-        print('-------------url-----------{}'.format(url))
         info_json = self.estate_parse(url)
         id = re.findall(r"\d+", url)[0]
         city = re.findall(r"[a-zA-Z_]+", re.findall(r"/[a-zA-Z_]+\.", url)[0])[0]
@@ -84,8 +88,10 @@ class LianJiaEstateSpider(BaseSpider):
     def proccess(self, url):
         html = self.crawl(url)
         results = self.parse(html)
+        self.unseen.update(results - self.seen)
         map(lambda href: self.output(href), results)
-
+        self.seen.update(self.unseen)
+        self.unseen.clear()
 
 
 if __name__ == '__main__':
